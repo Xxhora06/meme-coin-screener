@@ -1,0 +1,37 @@
+name: Run Meme Coin Screener Daily
+
+on:
+  schedule:
+    # Runs at 12:00 UTC every day (~8am Eastern / 7am during EST).
+    # Change the time by editing the cron below: minute hour * * *
+    - cron: '0 12 * * *'
+  workflow_dispatch: {}   # lets you also click "Run workflow" manually on GitHub anytime
+
+permissions:
+  contents: write   # needed so the workflow can commit the updated report back
+
+jobs:
+  run-screener:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: pip install requests
+
+      - name: Run screener
+        run: python screener_actions.py
+
+      - name: Commit updated report
+        run: |
+          git config user.name "screener-bot"
+          git config user.email "actions@github.com"
+          git add index.html score_history.json
+          git diff --quiet --cached || git commit -m "Daily screener update"
+          git push
